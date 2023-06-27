@@ -48,9 +48,9 @@ def are_you_there():
             client.sendto(f"ARE_YOU_THERE:{name}".encode(), ('localhost', i))
 
 # Add new user to user list
-def add_new_user(name, addr):
+def add_new_user(name, addr, seq_num=0):
     user_name = name
-    user_list.append([user_name, addr])
+    user_list.append([user_name, addr, seq_num])
 
 # Check if a port is available
 def is_port_available(port):
@@ -85,6 +85,17 @@ def receive():
                 user_name = data.decode()[data.decode().index(":")+1:]
                 add_new_user(user_name, addr)
                 print(f"{user_name} joined!")
+            elif decoded_data.startswith("seq="):
+                seq_num, msg = decoded_data[4:].split(";", 1)
+                # Extract the sequence number
+                seq_num = int(seq_num)
+                # Find the user who sent this message
+                user = next((u for u in user_list if u[1] == addr), None)
+                # If this is the next message in the sequence, print it
+                if user and seq_num == user[2] + 1:
+                    print(msg)
+                    # Increment the sequence number for this user
+                    user[2] += 1
             else:
                 print(data.decode())
 
@@ -118,7 +129,11 @@ def send_message():
         else:
             for user in user_list:
                 if user[1][1] != host_port:
-                    client.sendto(f"{name}: {message}".encode(), (user[1][0], user[1][1]))
+                    #client.sendto(f"{name}: {message}".encode(), (user[1][0], user[1][1]))
+                    user[2] += 1
+                    # Append sequence number to the message
+                    msg_with_seq = f"seq={user[2]};{name}: {message}"
+                    client.sendto(msg_with_seq.encode(), (user[1][0], user[1][1]))
 
 # ---------------------------
 
@@ -136,6 +151,10 @@ for i in PORT_LIST:
 if host_port is None:
     print("No port available")
     exit()
+
+
+
+
 
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
