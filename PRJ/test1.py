@@ -1,49 +1,69 @@
-import socket
 import threading
-import time
+from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 
-class Node:
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.socket.bind((self.host, self.port))
-        self.node_addresses = []
-        self.message_counter = 0
-        self.received_messages = []
 
-    def send_message(self, message):
-        data = f"{self.message_counter}:{message}".encode('utf-8')
-        self.message_counter += 1
+MAX_NODES = 10
+BUFFER_SIZE = 1024
 
-        for node_address in self.node_addresses:
-            self.socket.sendto(data, node_address)
+node_addresses = []
+message_counter = 0
 
-    def receive_messages(self):
-        while True:
-            data, addr = self.socket.recvfrom(1024)
-            message_parts = data.decode('utf-8').split(':', 1)
-            if len(message_parts) == 2:
-                message_id = int(message_parts[0])
-                message = message_parts[1]
-                self.received_messages.append((message_id, message))
-                self.process_received_messages()
+socket = socket(AF_INET, SOCK_DGRAM)
+socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
-    def process_received_messages(self):
-        self.received_messages.sort(key=lambda x: x[0])  # Sort messages by message_id
+def send_message(message):
+    global message_counter
+    message_counter += 1
+    data = f"{message_counter}:{message}".encode('utf-8')
+    
+    for address in node_addresses:
+        socket.sendto(data, address)
 
-        for message_id, message in self.received_messages:
-            print(f"Received message {message_id}: {message}")
+def receive_messages():
+    while True:
+        data, address = socket.recvfrom(BUFFER_SIZE)
+        message_parts = data.decode('utf-8').split(':', 1)
+        
+        if len(message_parts) == 2:
+            message_id = int(message_parts[0])
+            message = message_parts[1]
+            print(f"Received message {message_id} from {address}: {message}")
 
-if __name__ == '__main__':
-    node_addresses = [('localhost', 12346), ('localhost', 12347), ('localhost', 12348)]  # example addresses
-    node = Node('localhost', 12345)
-    node.node_addresses = node_addresses
+def add_node(address):
+    if len(node_addresses) < MAX_NODES:
+        node_addresses.append(address)
+        print(f"Node {address} added successfully.")
+    else:
+        print("Maximum number of nodes reached.")
 
-    threading.Thread(target=node.receive_messages).start()
+def start_chat():
+    threading.Thread(target=receive_messages).start()
+    
+    while True:
+        message = input("Enter your message (or 'exit' to quit): ")
+        if message.lower() == "exit":
+            break
+        send_message(message)
+
+if __name__ == "__main__":
+    host = input("Enter the host address: ")
+    port = int(input("Enter the port number: "))
+    socket.bind((host, port))
+
+    print("Chat application started.")
+    print("Enter 'exit' to quit.")
 
     while True:
-        message = input('Enter your message (or press Enter to exit): ')
-        if not message:
+        command = input("Enter a command (add_node, start_chat): ")
+        if command == "add_node":
+            new_host = input("Enter the host address of the new node: ")
+            new_port = int(input("Enter the port number of the new node: "))
+            add_node((new_host, new_port))
+        elif command == "start_chat":
+            start_chat()
+        elif command == "exit":
             break
-        node.send_message(message)
+        else:
+            print("Invalid command. Try again.")
+
+    print("Exiting the chat application.")

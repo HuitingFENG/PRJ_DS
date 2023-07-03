@@ -29,4 +29,13 @@ Fault tolerance solutions are mostly centered around redundancy schemes :
 3. ...
 
 
-Report
+#### Report
+1. 9 old nodes + 1 new node + 1 authenticate server (login/signup)
+2. Using UDP protocol during the communication betweens nodes:
+- create: each node creates a UDP socket to send or receive messages (python 'socket' module, 'socket.SOCK_DGRAM' parameter)
+- send: use 'socket' object's 'sendto' method for the message including the recipient's address (IP address and port)
+- receive: use 'socket' object's 'recvfrom' method for the received message (in python, each node has a thread to receive messages)
+- solve problem about potential packet loss and out-of-order message arrival:
+    - reliable delivery: make an acknowledgment mechanism, which means after sending messages, if sender couldn't get an acknowledgment response within a certain timeout period, the sender can resend the message.
+    - message ordering: give an id to each message, encode & decode the combination of id & message data, receiver use buffers to wait for all messages to arrive, receiver will wait if out-of-order messages and will send an acknowledgment message to sender after a certain timeout period so as to get the missing messages.
+    - message data format: send_all or send_one|sender_name|receiver_name|send_time|message_content (Before sending the message, it needs to be encoded into bytes using an encoding scheme like UTF-8. Upon receiving, the receiver decodes the message from bytes back into a readable format.)
