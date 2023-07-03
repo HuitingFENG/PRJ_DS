@@ -37,7 +37,6 @@ Fault tolerance solutions are mostly centered around redundancy schemes :
 https://lucid.app/lucidspark/346f3801-beb8-46d4-87c7-30de9ed91760/edit?viewport_loc=-46%2C143%2C1528%2C1218%2C0_0&invitationId=inv_9a170998-3c44-4171-a7a3-04afcaf35f5a 
 
 #### Step 1 - Group Communication
-0. Prerequists: a database including users' informations
 1. 9 old nodes + 1 new node + 1 authenticate server (login/signup/delete/logout)
 2. Using UDP protocol during the communication betweens nodes:
     - create: each node creates a UDP socket to send or receive messages (python 'socket' module, 'socket.SOCK_DGRAM' parameter)
@@ -64,3 +63,5 @@ https://lucid.app/lucidspark/346f3801-beb8-46d4-87c7-30de9ed91760/edit?viewport_
     - limit the timeout duration to optimize the waiting time for missing messages. If receivers still cannot get the missing messages, they will process the arrival messages and then later process the missing messages which are arrived later.
 
 #### Step 2 - Fault Tolerance
+1. Message Duplication: implement acknowledge mechanism
+2. Replicating Servers: 
