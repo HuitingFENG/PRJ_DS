@@ -27,3 +27,6 @@ Fault tolerance solutions are mostly centered around redundancy schemes :
 1. Duplicating messages
 2. Replicating servers
 3. ...
+
+
+Report

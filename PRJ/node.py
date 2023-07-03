@@ -123,7 +123,7 @@ if __name__ == '__main__':
     node_addresses = [('localhost', 12346), ('localhost', 12347), ('localhost', 12348)]  # example addresses
     node = Node('localhost', 12345)
     node.node_addresses = node_addresses
-
-    ''' node.start() '''
+    
     node.start()
+    
 
