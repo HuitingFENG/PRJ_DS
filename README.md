@@ -37,16 +37,16 @@ Fault tolerance solutions are mostly centered around redundancy schemes :
 https://lucid.app/lucidspark/346f3801-beb8-46d4-87c7-30de9ed91760/edit?viewport_loc=-46%2C143%2C1528%2C1218%2C0_0&invitationId=inv_9a170998-3c44-4171-a7a3-04afcaf35f5a 
 
 #### Step 1 - Group Communication
-1. 9 old nodes + 1 new node + 1 authenticate server (login/signup/delete/logout)
+1. 9 existing nodes/users + 1 new node/user + 1 authentication server (login/signup/delete/logout)
 2. Using UDP protocol during the communication betweens nodes:
     - create: each node creates a UDP socket to send or receive messages (python 'socket' module, 'socket.SOCK_DGRAM' parameter)
     - send: use 'socket' object's 'sendto' method for the message including the recipient's address (IP address and port)
     - receive: use 'socket' object's 'recvfrom' method for the received message (in python, each node has a thread to receive messages)
     - solve problem about potential packet loss and out-of-order message arrival:
         - reliable delivery: make an acknowledgment mechanism, which means after sending messages, if sender couldn't get an acknowledgment response within a certain timeout period, the sender can resend the message. The sender send an acknowledgment response for each message, and the receiver can count the number of acknowledgments received. Once the receiver receives acknowledgments for all sent messages, it knows that the total number of messages has been sent. If the sender does not receive an acknowledgment within a specified timeout period, it can retransmit the message.
-        - message ordering: give an id to each message, encode & decode the combination of id & message data, receiver use buffers to wait for all messages to arrive, receiver will wait if out-of-order messages and will send an acknowledgment message to sender after a certain timeout period so as to get the missing messages.
-        - message data format (optional and some data can be null): send_all or send_one|sender_name|receiver_name|send_time|message_content (Before sending the message, it needs to be encoded into bytes using an encoding scheme like UTF-8. Upon receiving, the receiver decodes the message from bytes back into a readable format.)
-        - sequence number / message's id (sender_name | receiver_name | message_counter): Maintain a separate sequence number counter for each private discussion. When transitioning to a broadcasted discussion, we start a new sequence number counter specifically for broadcasted messages, separate from the private discussion counters.
+        - message data format (optional and some data can be null): send_all or send_one|sender_name|receiver_name|vector_clock_time|message_content (Before sending the message, it needs to be encoded into bytes using an encoding scheme like UTF-8. Upon receiving, the receiver decodes the message from bytes back into a readable format.)
+        - vector clocks: each node maintains its own Vector Clock, which is an array of N integers, where N is the number of nodes in the system. When a node experiences an internal event (like sending a message), it increments its own counter in its Vector Clock. When a node sends a message, it includes its entire Vector Clock in the message. When a node receives a message, it increments its own counter and updates all elements in its Vector Clock by taking the maximum of the values in its own Vector Clock and the one received in the message.
+        - message ordering: when a node receives a message, it can compare its own vector clock with the vector clock of the message to determine if the message can be delivered immediately or if it should be buffered because there might be a gap in events. We will use FIFO message ordering. 
 3. Defining the logical order for the received broadcasted/public messages
     - sender gives id to each public message and sends a mixt of id+message to those who are in the same network (all other nodes)
     - receiver:
@@ -61,7 +61,7 @@ https://lucid.app/lucidspark/346f3801-beb8-46d4-87c7-30de9ed91760/edit?viewport_
 5. About memory and resource usage
     - limit on the buffer size to limit the number of out-of-order messages that can be buffered. (list or queue in python).
     - limit the timeout duration to optimize the waiting time for missing messages. If receivers still cannot get the missing messages, they will process the arrival messages and then later process the missing messages which are arrived later.
-
 #### Step 2 - Fault Tolerance
 1. Message Duplication: implement acknowledge mechanism
-2. Replicating Servers: 
+2. Replicating Servers: use techniques such as leader election or consensus algorithms (Raft or Paxos...) to ensure that there is a primary server responsible for coordinating the chat operations
+3.  Data Backup and Recovery: backup the chat data periodically
